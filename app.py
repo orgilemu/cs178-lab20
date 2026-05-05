@@ -146,12 +146,40 @@ def build_good_chart(df, display_name, types):
     #           primary type is "fire" the color would be TYPE_COLORS["fire"].
     #           Use types[0] to always get the primary type dynamically.
 
-    good_fig = px.pie(
-        df,
-        names="stat",
-        values="value",
-        color="stat",
+    stats  = df["stat"].tolist()
+    values = df["value"].tolist()
+    stats_closed  = stats  + [stats[0]]
+    values_closed = values + [values[0]]
+
+    hex_color = TYPE_COLORS[types[0]]   # e.g. "#F08030"
+
+    # Strip the # and convert each pair of hex digits to an integer (0–255)
+    r = int(hex_color[1:3], 16)
+    g = int(hex_color[3:5], 16)
+    b = int(hex_color[5:7], 16)
+
+
+    good_fig = go.Figure()
+
+    good_fig.add_trace(go.Scatterpolar(
+        r=values_closed,
+        theta=stats_closed,
+        fill="toself",
+        fillcolor = f"rgba({r}, {g}, {b}, 0.3)" ,
+        line = dict(color=f"rgba({r}, {g}, {b}, 1.0)") ,  
+        name=display_name,
+    ))
+
+    good_fig.update_layout(
+        title=f"{display_name} — Base Stat Radar",
+        polar=dict(
+            radialaxis=dict(
+                visible=True,
+                range=[0, 160],
+            )
+        ),
     )
+
 
 
     # ── END ────────────────────────────────────────────────────────────────────
@@ -168,10 +196,31 @@ def build_my_chart(df, display_name, types):
     Your chart should work well for any Pokémon, not just Charizard.
     """
     # ── Replace this placeholder with your own chart ───────────────────────────
-    fig = go.Figure()
-    fig.update_layout(
-        title="Your chart goes here — edit build_my_chart() in app.py",
+    TYPE_COLORS = {
+        "normal":   "#A8A878", "fire":     "#F08030", "water":    "#6890F0",
+        "electric": "#F8D030", "grass":    "#78C850", "ice":      "#98D8D8",
+        "fighting": "#C03028", "poison":   "#A040A0", "ground":   "#E0C068",
+        "flying":   "#A890F0", "psychic":  "#F85888", "bug":      "#A8B820",
+        "rock":     "#B8A038", "ghost":    "#705898", "dragon":   "#7038F8",
+        "dark":     "#705848", "steel":    "#B8B8D0", "fairy":    "#EE99AC",
+    }
+    
+    # Get the type color (fallback to gray if type isn't in the dict)
+    hex_color = TYPE_COLORS.get(types[0], "#A8A878")
+    
+    # Sort values from lowest to highest so largest bar is at the top
+    sorted_df = df.sort_values("value", ascending=True)
+
+    fig = px.bar(
+        sorted_df,
+        x="value", 
+        y="stat", 
+        orientation="h",
+        title=f"{display_name} — Sorted Base Stats",
+        labels={"value": "Base Stat Value", "stat": ""},
+        color_discrete_sequence=[hex_color]
     )
+    
     # ── End of placeholder ─────────────────────────────────────────────────────
     return apply_dark_theme(fig)
 
